@@ -4,6 +4,11 @@
 #include <WinSock2.h>
 #include <iostream>
 using namespace std;
+struct DataPackage {
+	int age;
+	char name[32];
+
+};
 int main()
 {
 	WORD ver = MAKEWORD(2, 2);
@@ -40,7 +45,7 @@ int main()
 	{
 		printf("错误，接收到无效客户端的SOCKET...\n");
 	}
-	printf("新客户端加入，IP=%s\n", inet_ntoa(clientAddr.sin_addr));
+	printf("新客户端加入，c_Socket=%d,P=%s\n",(int)_cSock, inet_ntoa(clientAddr.sin_addr));
 
 	char recvBuf[128] = {};
 	while (true)
@@ -51,14 +56,11 @@ int main()
 			printf("客户端已经退出，任务已经结束");
 			break;
 		}
+		printf("收到命令：%s\n", recvBuf);
 		//处理请求
-		if (0 == strcmp(recvBuf, "getName")) {
-			char msgbuf[] = "xiaoqiang";
-			send(_cSock, msgbuf, strlen(msgbuf) + 1, 0);
-		}
-		else if (0 == strcmp(recvBuf, "getAge")) {
-			char msgbuf[] = "80";
-			send(_cSock, msgbuf, strlen(msgbuf) + 1, 0);
+		if (0 == strcmp(recvBuf, "getInfo")) {
+			DataPackage dp = { 80,"张国荣" };
+			send(_cSock, (const char*)&dp, sizeof(DataPackage), 0);
 		}
 		else {
 			//send 向客户端发送数据
@@ -71,6 +73,7 @@ int main()
 	
 	//关闭套接字
 	closesocket(_cSock);
+	getchar();
 	WSACleanup();
 	return 0;
 

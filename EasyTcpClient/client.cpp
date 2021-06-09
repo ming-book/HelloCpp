@@ -6,6 +6,11 @@
 #include <WinSock2.h>
 #include <stdio.h>
 using namespace std;
+struct DataPackage {
+	int age;
+	char name[32];
+
+};
 int main()
 {
 	WORD ver = MAKEWORD(2, 2);
@@ -45,7 +50,12 @@ int main()
 		char recvBuf[128] = {};
 		int n_len = recv(_sock, recvBuf, 128, 0);
 		if (n_len > 0) {
-			printf("接收到数据：%s\n", recvBuf);
+			if (strcmp(recvBuf, "????") == 0) {
+				printf("不知道你发送的是什么");
+			}else{
+			DataPackage *dp = (DataPackage *)recvBuf;
+			printf("接收到数据：年龄：%d,姓名：%s\n", dp->age,dp->name);
+			}
 		}
 	}
 	
