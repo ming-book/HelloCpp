@@ -6,10 +6,27 @@
 #include <WinSock2.h>
 #include <stdio.h>
 using namespace std;
-struct DataPackage {
-	int age;
-	char name[32];
-
+enum CMD {
+	CMD_LOGIN,
+	CMD_LOGOUT,
+	CMD_ERROR
+};
+struct DataHeader {
+	short dataLength;
+	short cmd;
+};
+struct Login {
+	char username[32];
+	char PassWorld[32];
+};
+struct LoginResult {
+	int result;
+};
+struct Logout {
+	char userName[32];
+};
+struct LogoutResult {
+	int result;
 };
 int main()
 {
@@ -43,19 +60,35 @@ int main()
 		if (0 == strcmp(cmdBuf, "exit")) {
 			break;
 		}
-		else {
-			send(_sock, cmdBuf, strlen(cmdBuf) + 1, 0);
+		else if(0 == strcmp(cmdBuf,"login")) {
+			Login login = {"lyd","lydmm"};
+			DataHeader dh = { sizeof(Login),CMD_LOGIN };
+			//向服务器发送请求命令
+			send(_sock, (char*)&dh, sizeof(DataHeader),0);
+			send(_sock, (char*)&login, sizeof(Login), 0);
+			//接收服务器的返回数据
+			DataHeader retHeader = {};
+			LoginResult loginret = {};
+			recv(_sock, (char*)&retHeader, sizeof(DataHeader), 0);
+			recv(_sock, (char*)&loginret, sizeof(LoginResult), 0);
+			printf("用户：%s 登录结果：LoginResult:%d\n", login.username,loginret.result);
 		}
-		//3.接收服务器数据
-		char recvBuf[128] = {};
-		int n_len = recv(_sock, recvBuf, 128, 0);
-		if (n_len > 0) {
-			if (strcmp(recvBuf, "????") == 0) {
-				printf("不知道你发送的是什么");
-			}else{
-			DataPackage *dp = (DataPackage *)recvBuf;
-			printf("接收到数据：年龄：%d,姓名：%s\n", dp->age,dp->name);
-			}
+		else if (0 == strcmp(cmdBuf, "logout")) {
+			Logout logout = { "lyd"};
+			DataHeader dh = { sizeof(Logout),CMD_LOGOUT };
+			//向服务器发送请求命令
+			send(_sock, (char*)&dh, sizeof(DataHeader), 0);
+			send(_sock, (char*)&logout, sizeof(Logout), 0);
+			//接收服务器的返回数据
+			DataHeader retHeader = {};
+			LogoutResult logoutret = {};
+			recv(_sock, (char*)&retHeader, sizeof(DataHeader), 0);
+			recv(_sock, (char*)&logoutret, sizeof(LogoutResult), 0);
+			printf("用户：%s 退出结果：LoginResult:%d\n", logout.userName, logoutret.result);
+
+		}
+		else {
+			printf("不支持的命令，请重新输入\n");
 		}
 	}
 	

@@ -4,10 +4,27 @@
 #include <WinSock2.h>
 #include <iostream>
 using namespace std;
-struct DataPackage {
-	int age;
-	char name[32];
-
+enum CMD {
+	CMD_LOGIN,
+	CMD_LOGOUT,
+	CMD_ERROR
+};
+struct DataHeader {
+	short dataLength;
+	short cmd;
+};
+struct Login {
+	char username[32];
+	char PassWorld[32];
+};
+struct LoginResult {
+	int result;
+};
+struct Logout {
+	char userName[32];
+};
+struct LogoutResult {
+	int result;
 };
 int main()
 {
@@ -50,23 +67,42 @@ int main()
 	char recvBuf[128] = {};
 	while (true)
 	{
+		DataHeader header = {};
 		//接收客户端请求的数据
-		int nLen = recv(_cSock, recvBuf, 128, 0);
+		int nLen = recv(_cSock, (char*)&header, sizeof(DataHeader), 0);
 		if (nLen <= 0) {
-			printf("客户端已经退出，任务已经结束");
+			printf("客户端已经退出，任务已经结束\n");
 			break;
 		}
-		printf("收到命令：%s\n", recvBuf);
-		//处理请求
-		if (0 == strcmp(recvBuf, "getInfo")) {
-			DataPackage dp = { 80,"张国荣" };
-			send(_cSock, (const char*)&dp, sizeof(DataPackage), 0);
+		printf("收到命令：%d,数据的长度%d\n", header.cmd, header.dataLength);
+		switch (header.cmd)
+		{
+		case CMD_LOGIN: {
+			Login login = {};
+			recv(_cSock, (char*)&login, sizeof(Login), 0);
+			//忽略用户名密码正确的过程
+			printf("接收到用户：%s登录.密码：%s\n", login.username, login.PassWorld);
+			LoginResult ret = {1};
+			send(_cSock, (char *)&header, sizeof(DataHeader),0);
+			send(_cSock, (char*)&ret, sizeof(LoginResult), 0);
 		}
-		else {
-			//send 向客户端发送数据
-			char msgbuf[] = "????";
-			send(_cSock, msgbuf, strlen(msgbuf) + 1, 0);
+						break;
+		case CMD_LOGOUT: {
+			Logout logout = {};
+			recv(_cSock, (char*)&logout, sizeof(Logout), 0);
+			//忽略用户名密码正确的过程
+			printf("接收到用户：%s退出\n", logout.userName);
+			LogoutResult ret = { 1 };
+			send(_cSock, (char *)&header, sizeof(DataHeader), 0);
+			send(_cSock, (char*)&ret, sizeof(LogoutResult), 0);
 		
+		}
+						   break;
+		default:
+			header.cmd = CMD_ERROR;
+			header.dataLength = 0;
+			send(_cSock, (char*)&header, sizeof(DataHeader), 0);
+			break;
 		}
 	
 	}
